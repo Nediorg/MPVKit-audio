@@ -242,7 +242,9 @@ class BaseBuild {
             let meson = Utility.shell("which meson", isOutput: true)!
             try Utility.launch(path: meson, arguments: ["setup", buildURL.path, "--cross-file=\(crossFile.path)"] + arguments(platform: platform, arch: arch), currentDirectoryURL: directoryURL, environment: environ)
             try Utility.launch(path: meson, arguments: ["compile", "--clean"], currentDirectoryURL: buildURL, environment: environ)
-            try Utility.launch(path: meson, arguments: ["compile", "--verbose"], currentDirectoryURL: buildURL, environment: environ)
+            // Cap ninja parallelism to avoid macOS jetsam/OOM killing the
+            // background build during libmpv's heavy compile stage.
+            try Utility.launch(path: meson, arguments: ["compile", "-j", "4", "--verbose"], currentDirectoryURL: buildURL, environment: environ)
             try Utility.launch(path: meson, arguments: ["install"], currentDirectoryURL: buildURL, environment: environ)
         } else if FileManager.default.fileExists(atPath: (directoryURL + wafPath()).path) {
             let waf = (directoryURL + wafPath()).path

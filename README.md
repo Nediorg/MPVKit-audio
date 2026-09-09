@@ -1,125 +1,33 @@
-# MPVKit
+# MPVKit-Audio
 
-[![mpv](https://img.shields.io/badge/mpv-v0.41.0-blue.svg)](https://github.com/mpv-player/mpv)
-[![ffmpeg](https://img.shields.io/badge/ffmpeg-n8.1.2-blue.svg)](https://github.com/FFmpeg/FFmpeg)
-[![license](https://img.shields.io/github/license/mpvkit/MPVKit)](https://github.com/mpvkit/MPVKit/main/LICENSE)
+`MPVKit-Audio` is Klopydrome's local, **audio-focused** fork of [MPVKit](https://github.com/mpvkit/MPVKit). It is not a general-purpose package and is maintained only for the macOS music player in this repository.
 
-> MPVKit is only suitable for learning `libmpv` and will not be maintained too frequently.
+## Scope
 
-`MPVKit` is a collection of tools to use `mpv` in `iOS`, `macOS`, `tvOS` applications.
+The build keeps the libmpv client API and the macOS CoreAudio/AVFoundation audio outputs used by Klopydrome. FFmpeg is configured with audio decoders, audio-capable demuxers, audio filters, and network protocols needed for HTTP streaming. The following are disabled: video output, OpenGL, Vulkan/MoltenVK, hardware video acceleration, VideoToolbox rendering, shader compilation, Lua, the command-line player, Cocoa UI support, disc devices, and libavdevice.
 
-It includes scripts to build `mpv` native libraries.
+> libmpv 0.41.0 still declares `libass` and `libplacebo` as unconditional Meson dependencies. They remain build-time link inputs, but no video renderer or subtitle UI is enabled or exposed by Klopydrome.
 
-Forked from [kingslay/FFmpegKit](https://github.com/kingslay/FFmpegKit)
+## Build the local binary target
 
-## About Metal support
+The compiled XCFramework is intentionally ignored by Git. Build it once after cloning, and again after changing this fork:
 
-Metal support only a patch version ([#7857](https://github.com/mpv-player/mpv/pull/7857)) and does not officially support it yet. Encountering any issues is not strange. 
-
-## Installation
-
-### Swift Package Manager
-
-```
-https://github.com/mpvkit/MPVKit.git
+```sh
+./scripts/build-mpvkit-audio.sh
 ```
 
-### Choose which version
+The command requires Homebrew tools `nasm`, `meson`, `ninja`, `cmake`, `pkg-config`, `wget`, and `git`. On a fresh checkout it builds macOS `arm64` and `x86_64` slices and may take 60 minutes. The canonical output consumed by Swift Package Manager is:30
 
-| Version | License | Note |
-|---|---|---|
-| MPVKit | LGPL | [FFmpeg details](https://github.com/FFmpeg/FFmpeg/blob/master/LICENSE.md) , [mpv details](https://github.com/mpv-player/mpv/blob/master/Copyright) |
-| MPVKit-GPL | GPL | Support samba protocol, same as old MPVKit version |
-
-
-## How to build
-
-```bash
-make build
-# specified platforms (ios,macos,tvos,tvsimulator,isimulator,maccatalyst,xros,xrsimulator)
-make build platform=ios,macos
-# build GPL version
-make build enable-gpl
-# clean all build temp files and cache
-make clean
-# see help
-make help
+```text
+vendor/MPVKit-Audio/dist/release/xcframework/Libmpv.xcframework
 ```
 
-## Make demo app using the local build version
+The build also produces `Libmpv.xcframework.zip` for inspection or distribution, but the package deliberately references the unpacked XCFramework.
 
-If you want the demo app to use the local build version, you need to modify `Package.swift` to reference the local build xcframework file.
+## Integration
 
-<details>
-<summary>Click here for more information.</summary>
-  
-```
-.binaryTarget(
-    name: "Libmpv-GPL",
-    path: "dist/release/Libmpv.xcframework.zip"
-),
-.binaryTarget(
-    name: "Libavcodec-GPL",
-    path: "dist/release/Libavcodec.xcframework.zip"
-),
-.binaryTarget(
-    name: "Libavdevice-GPL",
-    path: "dist/release/Libavdevice.xcframework.zip"
-),
-.binaryTarget(
-    name: "Libavformat-GPL",
-    path: "dist/release/Libavformat.xcframework.zip"
-),
-.binaryTarget(
-    name: "Libavfilter-GPL",
-    path: "dist/release/Libavfilter.xcframework.zip"
-),
-.binaryTarget(
-    name: "Libavutil-GPL",
-    path: "dist/release/Libavutil.xcframework.zip"
-),
-.binaryTarget(
-    name: "Libswresample-GPL",
-    path: "dist/release/Libswresample.xcframework.zip"
-),
-.binaryTarget(
-    name: "Libswscale-GPL",
-    path: "dist/release/Libswscale.xcframework.zip"
-),
-```
-
-</details>
-
-## Run default mpv player
-
-```bash
-./mpv.sh --input-commands='script-message display-stats-toggle' [url]
-./mpv.sh --list-options
-```
-
-> Use <kbd>Shift</kbd>+<kbd>i</kbd> to show stats overlay
-
-## Related Projects
-
-* [moltenvk-build](https://github.com/mpvkit/moltenvk-build)
-* [libplacebo-build](https://github.com/mpvkit/libplacebo-build)
-* [libdovi-build](https://github.com/mpvkit/libdovi-build)
-* [libshaderc-build](https://github.com/mpvkit/libshaderc-build)
-* [libluajit-build](https://github.com/mpvkit/libluajit-build)
-* [libass-build](https://github.com/mpvkit/libass-build)
-* [libbluray-build](https://github.com/mpvkit/libbluray-build)
-* [libsmbclient-build](https://github.com/mpvkit/libsmbclient-build)
-* [gnutls-build](https://github.com/mpvkit/gnutls-build)
-* [openssl-build](https://github.com/mpvkit/openssl-build)
-
-## Donation
-
-If you appreciate my current work, you can buy me a cup of coffee ☕️.
-
-[![ko-fi](https://ko-fi.com/img/githubbutton_sm.svg)](https://ko-fi.com/C0C410P7UN)
+The root package exposes this fork through the `MPVKit` product. Application code imports `Libmpv` directly for the C API; no video-view or rendering API is part of this integration.
 
 ## License
 
-`MPVKit` source alone is licensed under the LGPL v3.0.
-
-`MPVKit` bundles (`frameworks`, `xcframeworks`), which include both `libmpv` and `FFmpeg` libraries, are also licensed under the LGPL v3.0. However, if the source code is built using the optional `enable-gpl` flag or prebuilt binaries with `-GPL` postfix are used, then `MPVKit` bundles become subject to the GPL v3.0.
+This fork retains the upstream [LGPL v3.0](LICENSE) licensing. The resulting bundle remains LGPL unless it is explicitly built with the optional GPL configuration.
