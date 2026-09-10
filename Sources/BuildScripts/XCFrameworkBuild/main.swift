@@ -443,7 +443,11 @@ private class BuildMPV: BaseBuild {
             array.append("-Dcoreaudio=enabled")
             array.append("-Davfoundation=enabled")
             array.append("-Dgl-cocoa=disabled")
-            array.append("-Dmacos-cocoa-cb=disabled")
+            // KEEP the Cocoa clipboard backend: it is plain NSPasteboard glue
+            // (no video, no window) and mp_initialize() inits the clipboard
+            // unconditionally — with no backend available it calls a NULL init
+            // pointer and segfaults (mp_clipboard_create, EXC_BAD_ACCESS).
+            array.append("-Dmacos-cocoa-cb=enabled")
             array.append("-Dmacos-media-player=disabled")
             array.append("-Dmacos-touchbar=disabled")
             array.append("-Dvideotoolbox-gl=disabled")
