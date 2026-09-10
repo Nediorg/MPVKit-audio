@@ -443,11 +443,16 @@ private class BuildMPV: BaseBuild {
             array.append("-Dcoreaudio=enabled")
             array.append("-Davfoundation=enabled")
             array.append("-Dgl-cocoa=disabled")
-            // KEEP the Cocoa clipboard backend: it is plain NSPasteboard glue
-            // (no video, no window) and mp_initialize() inits the clipboard
-            // unconditionally — with no backend available it calls a NULL init
-            // pointer and segfaults (mp_clipboard_create, EXC_BAD_ACCESS).
-            array.append("-Dmacos-cocoa-cb=enabled")
+            // macos-cocoa-cb must stay disabled: meson requires cocoa+gl-cocoa+swift
+            // for it, and this fork disables all three (no video stack).
+            array.append("-Dmacos-cocoa-cb=disabled")
+            // x11-clipboard must stay disabled: meson auto-enables it when Homebrew
+            // libX11 is present, but the framework links with -undefined
+            // dynamic_lookup and never links -lX11, so XOpenDisplay stays an
+            // unresolved symbol and mpv_initialize() jumps to 0x0 inside the x11
+            // clipboard backend init (EXC_BAD_ACCESS in mp_clipboard_create).
+            // The always-present "vo" backend then reports clipboard unavailable.
+            array.append("-Dx11-clipboard=disabled")
             array.append("-Dmacos-media-player=disabled")
             array.append("-Dmacos-touchbar=disabled")
             array.append("-Dvideotoolbox-gl=disabled")
